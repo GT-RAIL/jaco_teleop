@@ -4,7 +4,7 @@ project(jaco_teleop)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp control_msgs sensor_msgs kinova_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp control_msgs sensor_msgs kinova_msgs actionlib)
 
 ###################################################
 ## Declare things to be passed to other projects ##

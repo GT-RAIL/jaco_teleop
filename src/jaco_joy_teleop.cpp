@@ -24,9 +24,17 @@ jaco_joy_teleop::jaco_joy_teleop()
 //  angular_cmd = node.advertise<wpi_jaco_msgs::AngularCommand>(topic_prefix_ + "_arm/angular_cmd", 10);
   cartesian_cmd = node.advertise<kinova_msgs::PoseVelocity>("/j2s7s300_driver/in/cartesian_velocity", 10);
   joy_sub = node.subscribe<sensor_msgs::Joy>("joy", 10, &jaco_joy_teleop::joy_cback, this);
-  gripper_cmd = node.advertise<control_msgs::GripperCommand>("", 1);
 
 //  eStopClient = node.serviceClient<wpi_jaco_msgs::EStop>(topic_prefix_ + "_arm/software_estop");
+
+  if (!kinova_gripper_)
+  {
+    gripperClient = new actionlib::SimpleActionClient<control_msgs::GripperCommandAction>(gripper_topic_);
+  }
+  else
+  {
+    ROS_INFO("Kinova gripper currently not supported, gripper control will be disabled.");
+  }
 
   // read in throttle values
   private_nh.param<double>("linear_throttle_factor", linear_throttle_factor, 1.0);
@@ -45,7 +53,6 @@ jaco_joy_teleop::jaco_joy_teleop()
   EStopEnabled = false;
   helpDisplayed = false;
   mode = ARM_CONTROL;
-  gripperCommand.max_effort = 200;
 //  fingerCmd.position = false;
 //  fingerCmd.armCommand = false;
 //  fingerCmd.fingerCommand = true;
@@ -56,9 +63,8 @@ jaco_joy_teleop::jaco_joy_teleop()
 //  cartesianCmd.fingerCommand = false;
 //  cartesianCmd.repeat = true;
 
-  //TODO: make these params
-  gripperClosed = 0;
-  gripperOpen = 0.085;
+  open_sent = false;
+  close_sent = false;
 
   ROS_INFO("Joystick teleop started for: %s", arm_name_.c_str());
 
@@ -70,7 +76,7 @@ jaco_joy_teleop::jaco_joy_teleop()
   puts("| For help and controls, press:          |*");
   puts("|                          _             |*");
   puts("|                        _| |_           |*");
-  puts("|  show finger controls |_   _|          |*");
+  puts("|                       |_   _|          |*");
   puts("|                         |_|            |*");
   puts("|                  show arm controls     |*");
   puts("|                                        |*");
@@ -83,8 +89,7 @@ jaco_joy_teleop::jaco_joy_teleop()
     initRightTrigger = false;
     calibrated = false;
 
-    ROS_INFO(
-        "You specified a controller with analog triggers. This requires calibration before any teleoperation can begin.  Please press and release both triggers before continuing.");
+    ROS_INFO("You specified a controller with analog triggers. This requires calibration before any teleoperation can begin.  Please press and release both triggers before continuing.");
   }
   else
     calibrated = true;
@@ -169,7 +174,7 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
       puts("|    ________                ________    |*");
       puts("|   /    _   \\______________/        \\   |*");
       puts("|  |   _| |_    < >    < >     (4)    |  |*");
-      puts("|  |  |_   _|  Estop  start (1)   (3) |  |*");
+      puts("|  |  |_   _|         start (1)   (3) |  |*");
       puts("|  |    |_|    ___      ___    (2)    |  |*");
       puts("|  |          /   \\    /   \\          |  |*");
       puts("|  |          \\___/    \\___/          |  |*");
@@ -180,47 +185,9 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
       puts("|    \\___/                      \\___/    |*");
       puts("|                                        |*");
       puts("| Buttons:                               |*");
-      puts("|   (1) Switch to finger control mode    |*");
-      puts("|   (2) Switch to arm control mode       |*");
-      puts("|   (3) No function                      |*");
-      puts("|   (4) No function                      |*");
-      puts(" ----------------------------------------**");
-      puts("  *****************************************");
-    }
-  }
-  else if ((controllerType == DIGITAL && joy->axes.at(4) == 1.0)
-      || (controllerType == ANALOG && joy->axes.at(6) == 1.0))
-  {
-    if (!helpDisplayed)
-    {
-      helpDisplayed = true;
-      puts(" ----------------------------------------");
-      puts("| Joystick Teleop Help                   |");
-      puts("|----------------------------------------|*");
-      if (mode == ARM_CONTROL)
-        puts("| Current Mode: Arm Control              |*");
-      else
-        puts("| Current Mode: Finger Control           |*");
-      puts("|----------------------------------------|*");
-      puts("|                Controls                |*");
-      puts("| finger1 open/close  finger2 open/close |*");
-      puts("|    ________                ________    |*");
-      puts("|   /    _   \\______________/        \\   |*");
-      puts("|  |   _| |_    < >    < >     (4)    |  |*");
-      puts("|  |  |_   _|  Estop  start (1)   (3) |  |*");
-      puts("|  |    |_|    ___      ___    (2)    |  |*");
-      puts("|  |          /   \\    /   \\          |  |*");
-      puts("|  |          \\___/    \\___/          |  |*");
-      puts("|  | hand open/close  thumb open/close|  |*");
-      puts("|  |        _______/--\\_______        |  |*");
-      puts("|  |       |                  |       |  |*");
-      puts("|   \\     /                    \\     /   |*");
-      puts("|    \\___/                      \\___/    |*");
-      puts("|                                        |*");
-      puts("| Buttons:                               |*");
-      puts("|   (1) Switch to finger control mode    |*");
-      puts("|   (2) Switch to arm control mode       |*");
-      puts("|   (3) No function                      |*");
+      puts("|   (1) No function                      |*");
+      puts("|   (2) Close gripper                    |*");
+      puts("|   (3) Open gripper                     |*");
       puts("|   (4) No function                      |*");
       puts(" ----------------------------------------**");
       puts("  *****************************************");
@@ -229,7 +196,7 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
   else
     helpDisplayed = false;
 
-  int buttonIndex;
+  int buttonIndex1, buttonIndex2;
 
   switch (mode)
   {
@@ -276,19 +243,48 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
         cartesianCmd.twist_angular_y = joy->axes.at(3) * MAX_ANG_VEL * angular_throttle_factor;
       }
 
-      //mode switching
+      //mode switching (not used, since we've just implemented open/close functionality)
       if (controllerType == DIGITAL)
-        buttonIndex = 0;
-      else
-        buttonIndex = 2;
-
-      if (joy->buttons.at(buttonIndex) == 2)  // close gripper
       {
-
+        buttonIndex1 = 2;
+        buttonIndex2 = 3;
       }
-      else if (joy->buttons.at(buttonIndex) == 3)  // open gripper
+      else
       {
+        buttonIndex1 = 0;
+        buttonIndex2 = 1;
+      }
 
+      if (joy->buttons.at(buttonIndex1) == 1)  // close gripper
+      {
+        open_sent = false;
+        if (!close_sent)
+        {
+          gripperClient->cancelAllGoals();
+          control_msgs::GripperCommandGoal gripper_goal;
+          gripper_goal.command.max_effort = gripper_max_effort_;
+          gripper_goal.command.position = gripper_closed_pos_;
+          gripperClient->sendGoal(gripper_goal);
+          close_sent = true;
+        }
+      }
+      else if (joy->buttons.at(buttonIndex2) == 1)  // open gripper
+      {
+        close_sent = false;
+        if (!open_sent)
+        {
+          gripperClient->cancelAllGoals();
+          control_msgs::GripperCommandGoal gripper_goal;
+          gripper_goal.command.max_effort = gripper_max_effort_;
+          gripper_goal.command.position = gripper_open_pos_;
+          gripperClient->sendGoal(gripper_goal);
+          open_sent = true;
+        }
+      }
+      else
+      {
+        open_sent = false;
+        close_sent = false;
       }
       break;
 //    case FINGER_CONTROL:
@@ -417,15 +413,13 @@ void jaco_joy_teleop::publish_velocity()
 
 bool jaco_joy_teleop::loadParameters(const ros::NodeHandle n)
 {
-  n.param("wpi_jaco/arm_name",                arm_name_,              std::string("jaco"));
+  n.param("jaco_joy_teleop/arm_name", arm_name_, std::string("j2s7s300"));
+  n.param("jaco_joy_teleop/kinova_gripper", kinova_gripper_, false);
+  n.param("jaco_joy_teleop/gripper_topic", gripper_topic_, std::string("/gripper_actions/gripper_command"));
+  n.param("jaco_joy_teleop/gripper_closed_pos", gripper_closed_pos_, 0.0);
+  n.param("jaco_joy_teleop/gripper_open_pos", gripper_open_pos_, 0.085);
+  n.param("jaco_joy_teleop/gripper_max_effort", gripper_max_effort_, 200.0);
 
-  // Update topic prefix
-  if (arm_name_ == "jaco2")
-    topic_prefix_ = "jaco";
-  else
-    topic_prefix_ = arm_name_;
-
-  //! @todo MdL [IMPR]: Return is values are all correctly loaded.
   return true;
 }
 
@@ -437,7 +431,7 @@ int main(int argc, char **argv)
   // initialize the joystick controller
   jaco_joy_teleop controller;
 
-  ros::Rate loop_rate(60);	//rate at which to publish velocity commands
+  ros::Rate loop_rate(100);  //rate at which to publish velocity commands (100 Hz required for kinova_ros package)
   while (ros::ok())
   {
     controller.publish_velocity();

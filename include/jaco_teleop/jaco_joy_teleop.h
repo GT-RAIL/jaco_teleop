@@ -13,7 +13,8 @@
 #define JACO_JOY_TELEOP_H_
 
 #include <ros/ros.h>
-#include <control_msgs/GripperCommand.h>
+#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/GripperCommandAction.h>
 #include <kinova_msgs/PoseVelocity.h>
 //#include <wpi_jaco_msgs/CartesianCommand.h>
 //#include <wpi_jaco_msgs/EStop.h>
@@ -85,20 +86,23 @@ private:
 
   ros::Publisher angular_cmd; /*!< angular arm command topic */
   ros::Publisher cartesian_cmd; /*!< cartesian arm command topic */
-  ros::Publisher gripper_cmd;
   ros::Subscriber joy_sub; /*!< the joy topic */
 
 //  ros::ServiceClient eStopClient; /*!< arm software emergency stop service client */
 
 //  wpi_jaco_msgs::AngularCommand fingerCmd; /*!< finger movement command */
   kinova_msgs::PoseVelocity cartesianCmd; /*!< cartesian movement command */
-  control_msgs::GripperCommand gripperCommand;
+
+  actionlib::SimpleActionClient<control_msgs::GripperCommandAction> *gripperClient; /* actionlib client for non-kinova gripper support */
 
   int mode; /*!< the control mode */
   int controllerType; /*!< the type of joystick controller */
   double linear_throttle_factor; /*!< factor for reducing the linear speed */
   double angular_throttle_factor; /*!< factor for reducing the angular speed */
   double finger_throttle_factor; /*!< factor for reducing the finger speed */
+  double gripper_closed_pos_;
+  double gripper_open_pos_;
+  double gripper_max_effort_;
   bool stopMessageSentArm; /*!< flag to prevent the arm stop command from being sent repeatedly when the controller is in the neutral position */
   bool stopMessageSentFinger; /*!< flag to prevent the finger stop command from being sent repeatedly when the controller is in the neutral position */
   bool initLeftTrigger; /*!< flag for whether the left trigger is initialized */
@@ -106,8 +110,12 @@ private:
   bool calibrated; /*!< flag for whether the controller is calibrated, this only affects controllers with analog triggers */
   bool EStopEnabled; /*!< software emergency stop for the arm*/
   bool helpDisplayed; /*!< flag so help is not repeatedly displayed*/
+  bool kinova_gripper_; /*!< true if using the kinova gripper, false otherwise */
+  bool close_sent;
+  bool open_sent;
   std::string arm_name_;
   std::string topic_prefix_;
+  std::string gripper_topic_;
 
   double gripperClosed, gripperOpen;
 };
