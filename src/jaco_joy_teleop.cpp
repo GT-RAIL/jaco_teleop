@@ -5,8 +5,8 @@
  * jaco_joy_teleop creates a ROS node that allows for the control of the
  * JACO arm with a joystick. This node listens to a /joy topic.
  *
- * \author David Kent, WPI - davidkent@wpi.edu
- * \date June 25, 2014
+ * \author David Kent, GT - dekent@gatech.edu
+ * \date February 28, 2020
  */
 
 #include <jaco_teleop/jaco_joy_teleop.h>
@@ -21,11 +21,12 @@ jaco_joy_teleop::jaco_joy_teleop()
   loadParameters(node);
 
   // create the ROS topics
-//  angular_cmd = node.advertise<wpi_jaco_msgs::AngularCommand>(topic_prefix_ + "_arm/angular_cmd", 10);
-  cartesian_cmd = node.advertise<kinova_msgs::PoseVelocity>("/j2s7s300_driver/in/cartesian_velocity", 10);
+  cartesian_cmd = node.advertise<kinova_msgs::PoseVelocity>(arm_name_ + "_driver/in/cartesian_velocity", 10);
   joy_sub = node.subscribe<sensor_msgs::Joy>("joy", 10, &jaco_joy_teleop::joy_cback, this);
 
 //  eStopClient = node.serviceClient<wpi_jaco_msgs::EStop>(topic_prefix_ + "_arm/software_estop");
+  stopClient = node.serviceClient<kinova_msgs::Stop>(arm_name_ + "_driver/in/stop");
+  startClient = node.serviceClient<kinova_msgs::Start>(arm_name_ + "_driver/in/start");
 
   if (!kinova_gripper_)
   {
@@ -116,44 +117,20 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
   }
 
   //software emergency stop
-//  if (controllerType == DIGITAL)
-//  {
-//    if (joy->buttons.at(8) == 1)
-//    {
-//      EStopEnabled = true;
-//      wpi_jaco_msgs::EStop srv;
-//      srv.request.enableEStop = true;
-//      if (!eStopClient.call(srv))
-//        ROS_INFO("Couldn't call software estop service.");
-//    }
-//    else if (joy->buttons.at(9) == 1)
-//    {
-//      EStopEnabled = false;
-//      wpi_jaco_msgs::EStop srv;
-//      srv.request.enableEStop = false;
-//      if (!eStopClient.call(srv))
-//        ROS_INFO("Couldn't call software estop service.");
-//    }
-//  }
-//  else
-//  {
-//    if (joy->buttons.at(6) == 1)
-//    {
-//      EStopEnabled = true;
-//      wpi_jaco_msgs::EStop srv;
-//      srv.request.enableEStop = true;
-//      if (!eStopClient.call(srv))
-//        ROS_INFO("Couldn't call software estop service.");
-//    }
-//    else if (joy->buttons.at(7) == 1)
-//    {
-//      EStopEnabled = false;
-//      wpi_jaco_msgs::EStop srv;
-//      srv.request.enableEStop = false;
-//      if (!eStopClient.call(srv))
-//        ROS_INFO("Couldn't call software estop service.");
-//    }
-//  }
+  if ((controllerType == DIGITAL && joy->buttons.at(8) == 1) || (controllerType == ANALOG && joy->buttons.at(6) == 1))
+  {
+    EStopEnabled = true;
+    kinova_msgs::Stop stop_srv;
+    if (!stopClient.call(stop_srv))
+      ROS_INFO("Couldn't call software estop service.");
+  }
+  else if ((controllerType == DIGITAL && joy->buttons.at(9) == 1) || (controllerType == ANALOG && joy->buttons.at(7) == 1))
+  {
+    EStopEnabled = false;
+    kinova_msgs::Start start_srv;
+    if (!startClient.call(start_srv))
+      ROS_INFO("Couldn't call software estop service.");
+  }
 
   //help menu
   if ((controllerType == DIGITAL && joy->axes.at(5) == -1.0) || (controllerType == ANALOG && joy->axes.at(7) == -1.0))
@@ -174,7 +151,7 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
       puts("|    ________                ________    |*");
       puts("|   /    _   \\______________/        \\   |*");
       puts("|  |   _| |_    < >    < >     (4)    |  |*");
-      puts("|  |  |_   _|         start (1)   (3) |  |*");
+      puts("|  |  |_   _|  estop  start (1)   (3) |  |*");
       puts("|  |    |_|    ___      ___    (2)    |  |*");
       puts("|  |          /   \\    /   \\          |  |*");
       puts("|  |          \\___/    \\___/          |  |*");

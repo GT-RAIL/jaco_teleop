@@ -16,8 +16,8 @@
 #include <actionlib/client/simple_action_client.h>
 #include <control_msgs/GripperCommandAction.h>
 #include <kinova_msgs/PoseVelocity.h>
-//#include <wpi_jaco_msgs/CartesianCommand.h>
-//#include <wpi_jaco_msgs/EStop.h>
+#include <kinova_msgs/Start.h>
+#include <kinova_msgs/Stop.h>
 #include <sensor_msgs/Joy.h>
 
 //Control modes
@@ -87,6 +87,9 @@ private:
   ros::Publisher angular_cmd; /*!< angular arm command topic */
   ros::Publisher cartesian_cmd; /*!< cartesian arm command topic */
   ros::Subscriber joy_sub; /*!< the joy topic */
+
+  ros::ServiceClient stopClient;  /*!< kinova-ros stop (for software e-stop functionality) */
+  ros::ServiceClient startClient;  /*!< kinova-ros start (for disabling emergency stop) */
 
 //  ros::ServiceClient eStopClient; /*!< arm software emergency stop service client */
 
