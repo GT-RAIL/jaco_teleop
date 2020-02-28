@@ -35,7 +35,7 @@
  * with a keyboard.
  *
  * \author David Kent, GT - dekent@gatech.edu
- * \date June 26, 2014
+ * \date February 28, 2020
  */
 
 #ifndef JACO_KEY_TELEOP_H_
@@ -45,7 +45,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <kinova_msgs/PoseVelocity.h>
-//#include <wpi_jaco_msgs/CartesianCommand.h>
 #include <signal.h>
 #include <stdio.h>
 #include <termios.h>
@@ -145,7 +144,6 @@ private:
   double angular_throttle_factor; /*!< factor for reducing the angular speed */
   double finger_throttle_factor; /*!< factor for reducing the finger speed */
   std::string arm_name_;
-  std::string topic_prefix_;
 };
 
 /*!

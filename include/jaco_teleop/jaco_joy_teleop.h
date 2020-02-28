@@ -6,7 +6,7 @@
  * JACO arm with a joystick. This node listens to a /joy topic.
  *
  * \author David Kent, GT - dekent@gatech.edu
- * \date June 25, 2014
+ * \date February 28, 2020
  */
 
 #ifndef JACO_JOY_TELEOP_H_
@@ -91,9 +91,6 @@ private:
   ros::ServiceClient stopClient;  /*!< kinova-ros stop (for software e-stop functionality) */
   ros::ServiceClient startClient;  /*!< kinova-ros start (for disabling emergency stop) */
 
-//  ros::ServiceClient eStopClient; /*!< arm software emergency stop service client */
-
-//  wpi_jaco_msgs::AngularCommand fingerCmd; /*!< finger movement command */
   kinova_msgs::PoseVelocity cartesianCmd; /*!< cartesian movement command */
 
   actionlib::SimpleActionClient<control_msgs::GripperCommandAction> *gripperClient; /* actionlib client for non-kinova gripper support */

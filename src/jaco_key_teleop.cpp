@@ -34,8 +34,8 @@
  * jaco_key_teleop creates a ROS node that allows the control of the JACO arm
  * with a keyboard.
  *
- * \author David Kent, WPI - davidkent@wpi.edu
- * \date June 26, 2014
+ * \author David Kent, GT - dekent@gatech.edu
+ * \date February 28, 2020
  */
 
 #include <jaco_teleop/jaco_key_teleop.h>
@@ -52,8 +52,7 @@ jaco_key_teleop::jaco_key_teleop()
   loadParameters(nh_);
 
   // create the ROS topics
-//  angular_cmd = nh_.advertise<wpi_jaco_msgs::AngularCommand>(topic_prefix_ + "_arm/angular_cmd", 10);
-  cartesian_cmd = nh_.advertise<kinova_msgs::PoseVelocity>("/j2s7s300_driver/in/cartesian_velocity", 10);
+  cartesian_cmd = nh_.advertise<kinova_msgs::PoseVelocity>(arm_name_ + "_driver/in/cartesian_velocity", 10);
 
   // read in throttle values
   double temp;
@@ -76,17 +75,6 @@ void jaco_key_teleop::watchdog()
           && (ros::Time::now() > first_publish_ + ros::Duration(0.50)))
       {
         kinova_msgs::PoseVelocity cmd;
-//        wpi_jaco_msgs::CartesianCommand cmd;
-//        cmd.position = false;
-//        cmd.armCommand = true;
-//        cmd.fingerCommand = false;
-//        cmd.repeat = true;
-//        cmd.arm.linear.x = 0.0;
-//        cmd.arm.linear.y = 0.0;
-//        cmd.arm.linear.z = 0.0;
-//        cmd.arm.angular.x = 0.0;
-//        cmd.arm.angular.y = 0.0;
-//        cmd.arm.angular.z = 0.0;
         cmd.twist_linear_x = 0.0;
         cmd.twist_linear_y = 0.0;
         cmd.twist_linear_z = 0.0;
@@ -99,21 +87,7 @@ void jaco_key_teleop::watchdog()
       break;
     case FINGER_CONTROL:
     {
-//      boost::mutex::scoped_lock lock(publish_mutex_);
-//      if ((ros::Time::now() > last_publish_ + ros::Duration(0.15))
-//          && (ros::Time::now() > first_publish_ + ros::Duration(0.50)))
-//      {
-//        wpi_jaco_msgs::AngularCommand cmd;
-//        cmd.position = false;
-//        cmd.armCommand = false;
-//        cmd.fingerCommand = true;
-//        cmd.repeat = true;
-//        cmd.fingers.resize(3);
-//        cmd.fingers[0] = 0.0;
-//        cmd.fingers[1] = 0.0;
-//        cmd.fingers[2] = 0.0;
-//        angular_cmd.publish(cmd);
-//      }
+        // TODO: this is currently not supported
     }
       break;
   }
@@ -162,17 +136,6 @@ void jaco_key_teleop::loop()
         cmd.twist_angular_x = 0.0;
         cmd.twist_angular_y = 0.0;
         cmd.twist_angular_z = 0.0;
-//        wpi_jaco_msgs::CartesianCommand cmd;
-//        cmd.position = false;
-//        cmd.armCommand = true;
-//        cmd.fingerCommand = false;
-//        cmd.repeat = true;
-//        cmd.arm.linear.x = 0.0;
-//        cmd.arm.linear.y = 0.0;
-//        cmd.arm.linear.z = 0.0;
-//        cmd.arm.angular.x = 0.0;
-//        cmd.arm.angular.y = 0.0;
-//        cmd.arm.angular.z = 0.0;
 
         // w/s control forward/backward translation
         // a/d control left/right translation
@@ -237,66 +200,14 @@ void jaco_key_teleop::loop()
         break;
       case FINGER_CONTROL:
       {
-//        //initialize finger command
-//        wpi_jaco_msgs::AngularCommand cmd;
-//        cmd.position = false;
-//        cmd.armCommand = false;
-//        cmd.fingerCommand = true;
-//        cmd.repeat = true;
-//        cmd.fingers.resize(3);
-//        cmd.fingers[0] = 0.0;
-//        cmd.fingers[1] = 0.0;
-//        cmd.fingers[2] = 0.0;
-//
-//        // q/a controls finger 1
-//        // w/s controls finger 2
-//        // e/d controls finger 3
-//        // r/f controls entire hand
-//        switch (c)
-//        {
-//          case KEYCODE_Q:
-//            cmd.fingers[0] = -MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_A:
-//            cmd.fingers[0] = MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_W:
-//            cmd.fingers[1] = -MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_S:
-//            cmd.fingers[1] = MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_E:
-//            cmd.fingers[2] = -MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_D:
-//            cmd.fingers[2] = MAX_FINGER_VEL * finger_throttle_factor;
-//            break;
-//          case KEYCODE_R:
-//            cmd.fingers[0] = -MAX_FINGER_VEL * finger_throttle_factor;
-//            cmd.fingers[1] = cmd.fingers[0];
-//            cmd.fingers[2] = cmd.fingers[0];
-//            break;
-//          case KEYCODE_F:
-//            cmd.fingers[0] = MAX_FINGER_VEL * finger_throttle_factor;
-//            cmd.fingers[1] = cmd.fingers[0];
-//            cmd.fingers[2] = cmd.fingers[0];
-//            break;
-//          case
-//          KEYCODE_1:
-//            mode = ARM_CONTROL;
-//            ROS_INFO("Activated arm control mode");
-//            break;
-//        }
-//
-//        //publish twist to finger controller
-//        boost::mutex::scoped_lock lock(publish_mutex_);
-//        if (ros::Time::now() > last_publish_ + ros::Duration(1.0))
-//        {
-//          first_publish_ = ros::Time::now();
-//        }
-//        last_publish_ = ros::Time::now();
-//        angular_cmd.publish(cmd);
+        // TODO: this is currently not supported
+        switch (c)
+        {
+          case KEYCODE_1:
+            mode = ARM_CONTROL;
+            ROS_INFO("Activated arm control mode");
+            break;
+        }
       }
         break;
     }
@@ -329,10 +240,8 @@ void jaco_key_teleop::displayHelp()
       puts("|------------------------------------|*");
       puts("| Current Mode: Finger Control       |*");
       puts("|------------------------------------|*");
-      puts("| q/a : open/close thumb             |*");
-      puts("| w/s : open/close top finger        |*");
-      puts("| e/d : open/close bottom finger     |*");
-      puts("| r/f : open/close entire hand       |*");
+      puts("| (this mode is currently not        |*");
+      puts("|  supported!)                       |*");
       puts("| 1 : switch to Arm Control          |*");
       puts(" ------------------------------------**");
       puts("  *************************************");
@@ -342,13 +251,7 @@ void jaco_key_teleop::displayHelp()
 
 bool jaco_key_teleop::loadParameters(const ros::NodeHandle n)
 {
-  n.param("wpi_jaco/arm_name",                arm_name_,              std::string("jaco"));
-
-  // Update topic prefix
-  if (arm_name_ == "jaco2")
-    topic_prefix_ = "jaco";
-  else
-    topic_prefix_ = arm_name_;
+  n.param("jaco_key_teleop/arm_name", arm_name_, std::string("j2s7s300"));
 
   //! @todo MdL [IMPR]: Return is values are all correctly loaded.
   return true;

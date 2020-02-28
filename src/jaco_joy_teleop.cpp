@@ -1,5 +1,5 @@
 /*!
- * \jaco_joy_teleop.h
+ * \jaco_joy_teleop.cpp
  * \brief Allows for control of the jaco arm with a joystick.
  *
  * jaco_joy_teleop creates a ROS node that allows for the control of the
@@ -54,15 +54,6 @@ jaco_joy_teleop::jaco_joy_teleop()
   EStopEnabled = false;
   helpDisplayed = false;
   mode = ARM_CONTROL;
-//  fingerCmd.position = false;
-//  fingerCmd.armCommand = false;
-//  fingerCmd.fingerCommand = true;
-//  fingerCmd.repeat = true;
-//  fingerCmd.fingers.resize(3);
-//  cartesianCmd.position = false;
-//  cartesianCmd.armCommand = true;
-//  cartesianCmd.fingerCommand = false;
-//  cartesianCmd.repeat = true;
 
   open_sent = false;
   close_sent = false;
@@ -264,78 +255,6 @@ void jaco_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
         close_sent = false;
       }
       break;
-//    case FINGER_CONTROL:
-//      if (joy->axes.at(1) == 0.0)
-//      {
-//        //individual finger control
-//        //thumb controlled by right thumbstick
-//        if (controllerType == DIGITAL)
-//          fingerCmd.fingers[0] = -joy->axes.at(3) * MAX_FINGER_VEL * finger_throttle_factor;
-//        else
-//          fingerCmd.fingers[0] = -joy->axes.at(4) * MAX_FINGER_VEL * finger_throttle_factor;
-//
-//        //top finger controlled by left triggers
-//        if (controllerType == DIGITAL)
-//        {
-//          if (joy->buttons.at(4) == 1)
-//            fingerCmd.fingers[1] = -MAX_FINGER_VEL * finger_throttle_factor;
-//          else if (joy->buttons.at(6) == 1)
-//            fingerCmd.fingers[1] = MAX_FINGER_VEL * finger_throttle_factor;
-//          else
-//            fingerCmd.fingers[1] = 0.0;
-//        }
-//        else
-//        {
-//          if (joy->buttons.at(4) == 1)
-//            fingerCmd.fingers[1] = -MAX_FINGER_VEL * finger_throttle_factor;
-//          else
-//            fingerCmd.fingers[1] = (0.5 - joy->axes.at(2) / 2.0) * MAX_FINGER_VEL * finger_throttle_factor;
-//        }
-//
-//        //bottom finger controlled by right bumpers
-//        if (controllerType == DIGITAL)
-//        {
-//          if (joy->buttons.at(5) == 1)
-//            fingerCmd.fingers[2] = -MAX_FINGER_VEL * finger_throttle_factor;
-//          else if (joy->buttons.at(7) == 1)
-//            fingerCmd.fingers[2] = MAX_FINGER_VEL * finger_throttle_factor;
-//          else
-//            fingerCmd.fingers[2] = 0.0;
-//        }
-//        else
-//        {
-//          if (joy->buttons.at(5) == 1)
-//            fingerCmd.fingers[2] = -MAX_FINGER_VEL * finger_throttle_factor;
-//          else
-//            fingerCmd.fingers[2] = (0.5 - joy->axes.at(5) / 2.0) * MAX_FINGER_VEL * finger_throttle_factor;
-//        }
-//      }
-//      else
-//      {
-//        //control full gripper (outprioritizes individual finger control)
-//        fingerCmd.fingers[0] = -joy->axes.at(1) * MAX_FINGER_VEL * finger_throttle_factor;
-//        fingerCmd.fingers[1] = fingerCmd.fingers[0];
-//        fingerCmd.fingers[2] = fingerCmd.fingers[0];
-//      }
-//
-//      //mode switching
-//      if (controllerType == DIGITAL)
-//        buttonIndex = 1;
-//      else
-//        buttonIndex = 0;
-//
-//      if (joy->buttons.at(buttonIndex) == 1)
-//      {
-//        //cancel trajectory and switch to arm control mode
-//        fingerCmd.fingers[0] = 0.0;
-//        fingerCmd.fingers[1] = 0.0;
-//        fingerCmd.fingers[2] = 0.0;
-//        angular_cmd.publish(fingerCmd);
-//        mode = ARM_CONTROL;
-//
-//        ROS_INFO("Activated arm control mode");
-//      }
-//      break;
   }
 }
 
@@ -367,24 +286,6 @@ void jaco_joy_teleop::publish_velocity()
         stopMessageSentArm = false;
       }
       break;
-//    case FINGER_CONTROL:
-//      //only publish stop message once; this allows other nodes to publish velocities
-//      //while the controller is not being used
-//      if (fingerCmd.fingers[0] == 0.0 && fingerCmd.fingers[1] == 0.0 && fingerCmd.fingers[2] == 0.0)
-//      {
-//        if (!stopMessageSentFinger)
-//        {
-//          angular_cmd.publish(fingerCmd);
-//          stopMessageSentFinger = true;
-//        }
-//      }
-//      else
-//      {
-//        //send the finger velocity command
-//        angular_cmd.publish(fingerCmd);
-//        stopMessageSentFinger = false;
-//      }
-//      break;
   }
 }
 
